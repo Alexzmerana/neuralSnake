@@ -83,5 +83,5 @@ class Game:
 
             pygame.display.update()
 
-            self.clock.tick(5)
+            self.clock.tick(5 + (self.score // 10))
 
