@@ -1,30 +1,41 @@
-from board import Board
+import pygame
+import random
+
 from snake import Snake
 from apple import Apple
-import os
-from pynput import keyboard
-import time
 
 class Game:
-
-
     def __init__(self) -> None:
-        self.FPS = 10
-        self.width = 40
-        self.height = self.width // 2
-        self.score = 0
+        self.window_width = 800
+        self.window_height = 800
+        self.block_size = 16
+        self.width = self.window_width // self.block_size
+        self.height = self.window_height // self.block_size
+
+        self.white_color = (255, 255, 255)
+        self.black_color = (0, 0, 0)
+        self.red_color   = (255, 0, 0)
+
         self.snake = Snake()
-        self.apple = Apple((self.width // 2, self.height // 2))
-        self.board = Board(self.snake, self.apple, self.width, self.height)
+        self.apple = Apple((self.width - 2, self.height - 2))
+        self.score = 0
+
+        self.clock = pygame.time.Clock()
+
+        self.game_window = pygame.display.set_mode((self.window_width, self.window_height))
+        pygame.display.set_caption("Neural Snake")
 
 
-    def clearScreen(self):
-        print("\033[H\033[3J", end="")
+        self.clock = pygame.time.Clock()
+
+    def display(self):
+        for x, y in self.snake.list:
+            pygame.draw.rect(self.game_window, self.white_color, (x * self.block_size, y * self.block_size, self.block_size, self.block_size))
+        pygame.draw.rect(self.game_window, self.red_color, (self.apple.coords[0] * self.block_size, self.apple.coords[1] * self.block_size, self.block_size, self.block_size))
 
     def update(self):
         self.snake.move()
-        self.board.update()
-
+        
     def collision(self):
         head = self.snake.list[0]
 
@@ -37,37 +48,40 @@ class Game:
         if head == self.apple.coords:
             self.snake.grow()
             self.score += 1
-            self.apple.coords = self.board.set.difference(set(self.snake.list)).pop()
+            while self.apple.coords in self.snake.list:
+                self.apple.coords = (random.randint(0, self.width), random.randint(0, self.height))
 
         return False
 
-    def run(self):
+    def run_loop(self):
         while not self.collision():
-            self.board.render()
+            self.game_window.fill(self.black_color)
+            
 
+            for event in pygame.event.get():
+
+                if event.type == pygame.QUIT:
+                    return
+
+                # Listening for when a key is pressed down on the keyboard
+                elif event.type == pygame.KEYDOWN:
+                    # If the UP arrow key is pressed, we're decreasing our y coordinate
+                    if event.key == pygame.K_UP and self.snake.direction != 3:
+                        self.snake.direction = 1
+                    # The DOWN arrow key pressed, on the other hand, increases the position on the Y-axis
+                    elif event.key == pygame.K_RIGHT and self.snake.direction != 4:
+                        self.snake.direction = 2
+                    # The DOWN arrow key pressed, on the other hand, increases the position on the Y-axis
+                    elif event.key == pygame.K_DOWN and self.snake.direction != 1:
+                        self.snake.direction = 3
+                    # The DOWN arrow key pressed, on the other hand, increases the position on the Y-axis
+                    elif event.key == pygame.K_LEFT and self.snake.direction != 2:
+                        self.snake.direction = 4
+
+            self.display()
             self.update()
 
-            time.sleep(1/(self.FPS + self.score // 2))
-            self.clearScreen()
-        os.system('clear')
-        print("Score:", self.score)
+            pygame.display.update()
 
-game = Game()
+            self.clock.tick(5)
 
-def on_press(key):
-    if key == keyboard.Key.right and game.snake.direction != 4:
-        game.snake.direction = 2
-    elif key == keyboard.Key.left and game.snake.direction != 2:
-        game.snake.direction = 4
-    elif key == keyboard.Key.up and game.snake.direction != 3:
-        game.snake.direction = 1
-    elif key == keyboard.Key.down and game.snake.direction != 1:
-        game.snake.direction = 3
-
-
-
-listener = keyboard.Listener(
-    on_press=on_press)
-listener.start()
-
-game.run()
